@@ -132,6 +132,25 @@ Get-ChildItem -Path $distRoot -Force | ForEach-Object { Write-Host " - $($_.Name
 Write-Host "Creating artifact.zip from contents of dist (root entries: app, appspec.yml, scripts if present)..."
 Compress-Archive -Path (Join-Path $distRoot '*') -DestinationPath (Join-Path (Get-Location) "artifact.zip") -Force
 
+# --- Convert Linux shell scripts to Unix (LF) line endings ---
+$scriptDir = "dist/scripts"
+
+if (Test-Path $scriptDir) {
+    Write-Host "Converting .sh scripts to Unix (LF) line endings in $scriptDir"
+    Get-ChildItem -Path $scriptDir -Filter *.sh | ForEach-Object {
+        $path = $_.FullName
+        Write-Host "  Converting $path"
+        $content = Get-Content $path -Raw
+        # Replace CRLF with LF
+        $content = $content -replace "`r`n", "`n"
+        [System.IO.File]::WriteAllText($path, $content)
+    }
+}
+else {
+    Write-Host "No dist/scripts directory found, skipping .sh conversion."
+}
+
+
 Write-Host "artifact.zip created: $(Get-Item artifact.zip).FullName"
 
 Write-Host "---- publish.ps1 finished successfully ----"
